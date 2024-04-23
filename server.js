@@ -4,15 +4,20 @@ import multer from 'multer';
 import multerS3 from 'multer-s3';
 import AWS from 'aws-sdk'
 import dotenv from 'dotenv'
+import {Server} from 'socket.io';
+import http from 'http'
 import { registerUser, insertTasks, loginUser, getCategories, verifyToken, updateUserProfilePicture, getUser, getTodos, updateIsFavorite, getTodosByUser, deleteTODO, updateTodo, updateViews } from './my_functions.js'
 import { replaceFilenameWithUsername } from './helpers.js'
 
 dotenv.config()
 const app = express()
 const PORT = 3000
+const server = http.createServer(app)
+const io = new Server(server)
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 var con = mysql.createConnection({
     host: "localhost",
@@ -70,7 +75,7 @@ app.get('/api/v1/todosByUser/:username', verifyToken, (req, res) => {
     const { username } = req.params;
     getTodosByUser(req, res, con, username)
 })
-app.post('/api/v1/todos/add', verifyToken, (req, res) => insertTasks(req, res, con))
+app.post('/api/v1/todos/add', verifyToken, (req, res) => insertTasks(req, res, con, io))
 app.post('/api/v1/todos/updateIsFavorite', verifyToken, (req, res) => updateIsFavorite(req, res, con));
 app.delete('/api/v1/todos/delete/:task_id', verifyToken, (req, res) => {
     const { task_id } = req.params;
@@ -88,6 +93,23 @@ app.put('/api/v1/todos/updateViews/:task_id/:action', verifyToken, (req, res) =>
 app.get('/api/v1/categories', verifyToken, (req, res) => getCategories(req, res, con))
 
 app.post('/api/v1/updateProfilePicture', verifyToken, upload.single('profile_picture'), (req, res) => updateUserProfilePicture(req, res, con))
+
+io.on('connection', (socket) => {
+    console.log('A client connected')
+
+    con.query('SELECT COUNT(*) AS totalCount FROM tasks', (error, results) => {
+        if (error) {
+            console.error('Error fetching todo count: ', error)
+            return
+        }
+        const totalCount = results[0].totalCount
+        socket.emit('totalCount', totalCount)
+    })
+
+    socket.on('disconnect', () => { 
+        console.log('A client disconnected')
+    })
+})
 
 
 app.listen(PORT, () => {

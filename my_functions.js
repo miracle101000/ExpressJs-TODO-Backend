@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
 
 dotenv.config()
-const jwt_secret_key =  process.env.JWT_SECRET_KEY
+const jwt_secret_key = process.env.JWT_SECRET_KEY
 
 ///Verify Token
 export function verifyToken(req, res, next) {
@@ -106,7 +106,7 @@ export async function registerUser(req, res, con) {
 }
 
 ///Insert Task
-export function insertTasks(req, res, con) {
+export function insertTasks(req, res, con, io) {
     const task = req.body
     console.log(req.body)
     con.query('INSERT INTO tasks SET ?', [task], (error, results, field) => {
@@ -117,6 +117,15 @@ export function insertTasks(req, res, con) {
         }
         console.log('Data inserted successfully');
         res.status(200).send('Data inserted successfully');
+    })
+
+    con.query('SELECT COUNT(*) AS totalCount FROM tasks', (error, results) => {
+        if (error) {
+            console.error('Error fetching todo count:', error);
+            return;
+        }
+        const totalCount = results[0].totalCount;
+        io.emit('totalCount', totalCount)
     })
 }
 
