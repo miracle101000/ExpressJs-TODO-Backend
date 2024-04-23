@@ -91,6 +91,12 @@ app.get('/api/v1/categories', verifyToken, (req, res) => getCategories(req, res,
 
 app.post('/api/v1/updateProfilePicture', verifyToken, upload.single('profile_picture'), (req, res) => updateUserProfilePicture(req, res, con))
 
+
+///Without socket
+// app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+// })
+///With socket
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
