@@ -4,9 +4,9 @@ import multer from 'multer';
 import multerS3 from 'multer-s3';
 import AWS from 'aws-sdk'
 import dotenv from 'dotenv'
-import {Server} from 'socket.io';
+import { Server } from 'socket.io';
 import http from 'http'
-import { registerUser, insertTasks, loginUser, getCategories, verifyToken, updateUserProfilePicture, getUser, getTodos, updateIsFavorite, getTodosByUser, deleteTODO, updateTodo, updateViews } from './my_functions.js'
+import { registerUser, insertTasks, loginUser, getCategories, verifyToken, updateUserProfilePicture, getUser, getTodos, updateIsFavorite, getTodosByUser, deleteTODO, updateTodo, updateViews, socketConnection } from './my_functions.js'
 import { replaceFilenameWithUsername } from './helpers.js'
 
 dotenv.config()
@@ -14,16 +14,14 @@ const app = express()
 const PORT = 3000
 const server = http.createServer(app)
 const io = new Server(server)
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 var con = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "Godisgood/1",
-    database: "TODO_APP"
+    host: process.env.LOCAL_HOST,
+    user: process.env.USERR,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE
 })
 
 con.connect((err) => {
@@ -86,7 +84,6 @@ app.put('/api/v1/todos/update/:task_id', verifyToken, (req, res) => {
     updateTodo(req, res, con, task_id)
 })
 app.put('/api/v1/todos/updateViews/:task_id/:action', verifyToken, (req, res) => {
-    // Extract the taskId from the request parameters
     const { task_id, action } = req.params;
     updateViews(req, res, con, task_id, action)
 });
@@ -94,27 +91,11 @@ app.get('/api/v1/categories', verifyToken, (req, res) => getCategories(req, res,
 
 app.post('/api/v1/updateProfilePicture', verifyToken, upload.single('profile_picture'), (req, res) => updateUserProfilePicture(req, res, con))
 
-io.on('connection', (socket) => {
-    console.log('A client connected')
-
-    con.query('SELECT COUNT(*) AS totalCount FROM tasks', (error, results) => {
-        if (error) {
-            console.error('Error fetching todo count: ', error)
-            return
-        }
-        const totalCount = results[0].totalCount
-        socket.emit('totalCount', totalCount)
-    })
-
-    socket.on('disconnect', () => { 
-        console.log('A client disconnected')
-    })
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 })
 
-
-app.listen(PORT, () => {
-    console.log(`Server listening on ${PORT}`);
-})
+io.on('connection', (socket) => socketConnection(socket, con))
 
 
 

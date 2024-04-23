@@ -396,3 +396,19 @@ export function updateViews(req, res, con, task_id, actio) {
         res.status(200).json({ message: 'Views updated successfully' });
     });
 }
+
+export function socketConnection(socket, con) {
+    socket.emit("message", { backend: "hey how are you?" });
+    con.query('SELECT COUNT(*) AS totalCount FROM tasks', (error, results) => {
+        if (error) {
+            console.error('Error fetching todo count: ', error)
+            return
+        }
+        const totalCount = results[0].totalCount
+        socket.emit('totalCount', totalCount)
+    })
+
+    socket.on('disconnect', () => {
+        console.log('A client disconnected')
+    })
+}
