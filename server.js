@@ -101,7 +101,11 @@ server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
 
-io.on('connection', (socket) => socketConnection(socket, con))
+///To refer to localhost only without additional path ie: http://localhost:3000
+// io.on('connection', (socket) => socketConnection(socket, con))
+
+///To refer to a specific path in localhost only without additional path ie: http://localhost:3000/api/v1/socket
+io.of('/api/v1/socket').on('connection', (socket) => socketConnection(socket, con))
 
 
 
